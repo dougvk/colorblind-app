@@ -8,7 +8,11 @@ interface ImagePickerResult {
   height: number;
 }
 
-export default function ImagePickerComponent() {
+interface ImagePickerProps {
+  onImageSelected: (image: ImagePickerResult | null) => void;
+}
+
+export default function ImagePickerComponent({ onImageSelected }: ImagePickerProps) {
   const [selectedImage, setSelectedImage] = useState<ImagePickerResult | null>(null);
 
   const pickImage = async () => {
@@ -29,11 +33,13 @@ export default function ImagePickerComponent() {
 
     if (!result.canceled) {
       const asset = result.assets[0];
-      setSelectedImage({
+      const image = {
         uri: asset.uri,
         width: asset.width,
         height: asset.height,
-      });
+      };
+      setSelectedImage(image);
+      onImageSelected(image);
     }
   };
 

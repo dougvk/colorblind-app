@@ -12,9 +12,20 @@
 
 ## 2. Image Manipulation Setup
 - Install `expo-image-manipulator`
-- Create base transformation component
-- Set up state management for image data
-- Implement basic image preview
+- Create base transformation component:
+  - Props interface for image input/output
+  - Side-by-side preview layout
+  - Loading states during processing
+  - Basic slider controls
+  - Initial test filter (brightness)
+- Set up state management:
+  - Image transformation history
+  - Current/previous state tracking
+  - Error handling for failed transformations
+- Implement basic preview system:
+  - Original vs transformed view
+  - Real-time preview when possible
+  - Fallback to sequential preview for heavy operations
 
 ## 3. Transformation Pipeline
 ### Core Features
@@ -95,4 +106,8 @@ When adding native modules that aren't supported in Expo Go:
 - Always restart development server after installing new packages
 - Use development builds for native modules not supported in Expo Go
 - Clear Metro bundler cache if changes aren't reflecting
-- Check iOS/Android specific setup requirements for native modules 
+- Check iOS/Android specific setup requirements for native modules
+
+Commands:
+npx expo prebuild
+npx expo run:ios
