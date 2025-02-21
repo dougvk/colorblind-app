@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Switch, Text, Pressable } from 'react-native';
+import { View, StyleSheet, Switch, Text, Pressable, useWindowDimensions, ScrollView } from 'react-native';
 import Slider from '@react-native-community/slider';
 import SkiaImageFilter from './SkiaImageFilter';
 import { 
@@ -21,7 +21,9 @@ interface ImageTransformerProps {
 }
 
 export default function ImageTransformer({ image }: ImageTransformerProps) {
+  const { width: screenWidth } = useWindowDimensions();
   const [colorVision, setColorVision] = useState<ColorVisionState>(DEFAULT_COLOR_VISION_STATE);
+  const [isShowingOriginal, setIsShowingOriginal] = useState(false);
 
   const computeMatrix = (): ColorMatrix => {
     let matrix = IDENTITY_MATRIX.matrix;
@@ -73,30 +75,26 @@ export default function ImageTransformer({ image }: ImageTransformerProps) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.imageRow}>
-        <View style={styles.imageContainer}>
-          <SkiaImageFilter
-            imageUri={image.uri}
-            matrix={IDENTITY_MATRIX.matrix}
-            width={150}
-            height={150}
-          />
-          <Text style={styles.label}>Original</Text>
-        </View>
-        
-        <View style={styles.imageContainer}>
-          <SkiaImageFilter
-            imageUri={image.uri}
-            matrix={computeMatrix().matrix}
-            width={150}
-            height={150}
-          />
-          <Text style={styles.label}>{getDisplayName()}</Text>
-        </View>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <Pressable 
+        style={styles.imageContainer}
+        onPressIn={() => setIsShowingOriginal(true)}
+        onPressOut={() => setIsShowingOriginal(false)}
+      >
+        <SkiaImageFilter
+          imageUri={image.uri}
+          matrix={isShowingOriginal ? IDENTITY_MATRIX.matrix : computeMatrix().matrix}
+          width={screenWidth - 20}
+          height={screenWidth - 20}
+        />
+        <Text style={styles.label}>
+          {isShowingOriginal ? 'Original (Hold to View)' : getDisplayName()}
+        </Text>
+      </Pressable>
 
       <View style={styles.controls}>
+        <Text style={styles.controlsTitle}>Color Vision Settings</Text>
+        
         <View style={styles.deficiencyControl}>
           <View style={styles.controlHeader}>
             <Switch
@@ -141,24 +139,24 @@ export default function ImageTransformer({ image }: ImageTransformerProps) {
           )}
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  contentContainer: {
     padding: 10,
   },
-  imageRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
   imageContainer: {
-    flex: 1,
-    marginHorizontal: 5,
+    width: '100%',
     aspectRatio: 1,
+    marginBottom: 20,
+    borderRadius: 10,
+    overflow: 'hidden',
     position: 'relative',
   },
   label: {
@@ -169,18 +167,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     color: 'white',
     textAlign: 'center',
-    padding: 5,
-    fontSize: 12,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    padding: 8,
+    fontSize: 14,
   },
   controls: {
-    padding: 10,
+    padding: 15,
     backgroundColor: '#f5f5f5',
-    borderRadius: 10,
+    borderRadius: 15,
+  },
+  controlsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    color: '#333',
   },
   deficiencyControl: {
-    marginBottom: 15,
+    marginBottom: 20,
   },
   controlHeader: {
     flexDirection: 'row',
