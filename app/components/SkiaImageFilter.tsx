@@ -1,11 +1,10 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Canvas, Image, useImage, Paint, ColorMatrix } from '@shopify/react-native-skia';
-import { ColorMatrix as ColorMatrixType } from "../lib/colorMatrices";
 
 interface SkiaImageFilterProps {
   imageUri: string;
-  matrix: ColorMatrixType;
+  matrix: number[];
   width: number;
   height: number;
 }
@@ -37,7 +36,7 @@ export default function SkiaImageFilter({ imageUri, matrix, width, height }: Ski
         fit="contain"
       >
         <Paint>
-          <ColorMatrix matrix={matrix.matrix} />
+          <ColorMatrix matrix={matrix} />
         </Paint>
       </Image>
     </Canvas>

@@ -43,7 +43,8 @@
     "expo-image-picker": "~16.0.6",
     "expo-image-manipulator": "~13.0.6",
     "expo-image": "~2.0.6",
-    "@shopify/react-native-skia": "1.5.0"
+    "@shopify/react-native-skia": "1.5.0",
+    "@react-native-community/slider": "4.5.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { View, StyleSheet, Switch, Text, Pressable } from 'react-native';
+import Slider from '@react-native-community/slider';
 import SkiaImageFilter from './SkiaImageFilter';
-import { IDENTITY_MATRIX, GRAYSCALE_MATRIX, type ColorMatrix } from '../lib/colorMatrices';
+import { 
+  IDENTITY_MATRIX, 
+  DEFAULT_COLOR_VISION_STATE,
+  type ColorVisionState,
+  type ColorDeficiency,
+  type ColorMatrix,
+  interpolateMatrix,
+  combineMatrices
+} from '../lib/colorMatrices';
 
 interface ImageTransformerProps {
   image: {
@@ -12,12 +21,55 @@ interface ImageTransformerProps {
 }
 
 export default function ImageTransformer({ image }: ImageTransformerProps) {
-  const [currentMatrix, setCurrentMatrix] = useState<ColorMatrix>(IDENTITY_MATRIX);
+  const [colorVision, setColorVision] = useState<ColorVisionState>(DEFAULT_COLOR_VISION_STATE);
 
-  const toggleFilter = () => {
-    setCurrentMatrix((current: ColorMatrix) => 
-      current.name === 'Original' ? GRAYSCALE_MATRIX : IDENTITY_MATRIX
-    );
+  const computeMatrix = (): ColorMatrix => {
+    let matrix = IDENTITY_MATRIX.matrix;
+    
+    if (colorVision.protan.enabled) {
+      const protanMatrix = interpolateMatrix(
+        IDENTITY_MATRIX.matrix,
+        colorVision.protan.matrix,
+        colorVision.protan.intensity
+      );
+      matrix = combineMatrices(matrix, protanMatrix);
+    }
+    
+    if (colorVision.deutan.enabled) {
+      const deutanMatrix = interpolateMatrix(
+        IDENTITY_MATRIX.matrix,
+        colorVision.deutan.matrix,
+        colorVision.deutan.intensity
+      );
+      matrix = combineMatrices(matrix, deutanMatrix);
+    }
+    
+    return {
+      name: getDisplayName(),
+      matrix,
+      description: 'Combined red-green color vision deficiency'
+    };
+  };
+
+  const updateDeficiency = (type: 'protan' | 'deutan', updates: Partial<ColorDeficiency>) => {
+    setColorVision(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        ...updates
+      }
+    }));
+  };
+
+  const getDisplayName = () => {
+    const parts = [];
+    if (colorVision.protan.enabled) {
+      parts.push(`P:${Math.round(colorVision.protan.intensity * 100)}%`);
+    }
+    if (colorVision.deutan.enabled) {
+      parts.push(`D:${Math.round(colorVision.deutan.intensity * 100)}%`);
+    }
+    return parts.length ? `Red-Green (${parts.join(', ')})` : 'Original';
   };
 
   return (
@@ -26,7 +78,7 @@ export default function ImageTransformer({ image }: ImageTransformerProps) {
         <View style={styles.imageContainer}>
           <SkiaImageFilter
             imageUri={image.uri}
-            matrix={IDENTITY_MATRIX}
+            matrix={IDENTITY_MATRIX.matrix}
             width={150}
             height={150}
           />
@@ -36,23 +88,58 @@ export default function ImageTransformer({ image }: ImageTransformerProps) {
         <View style={styles.imageContainer}>
           <SkiaImageFilter
             imageUri={image.uri}
-            matrix={currentMatrix}
+            matrix={computeMatrix().matrix}
             width={150}
             height={150}
           />
-          <Text style={styles.label}>{currentMatrix.name}</Text>
+          <Text style={styles.label}>{getDisplayName()}</Text>
         </View>
       </View>
 
       <View style={styles.controls}>
-        <Pressable
-          style={styles.button}
-          onPress={toggleFilter}
-        >
-          <Text style={styles.buttonText}>
-            {currentMatrix.name === 'Original' ? 'Apply Grayscale' : 'Reset'}
-          </Text>
-        </Pressable>
+        <View style={styles.deficiencyControl}>
+          <View style={styles.controlHeader}>
+            <Switch
+              value={colorVision.protan.enabled}
+              onValueChange={(enabled) => updateDeficiency('protan', { enabled })}
+            />
+            <Text style={styles.controlLabel}>
+              Protanopia ({Math.round(colorVision.protan.intensity * 100)}%)
+            </Text>
+          </View>
+          {colorVision.protan.enabled && (
+            <Slider
+              style={styles.slider}
+              value={colorVision.protan.intensity}
+              onValueChange={(intensity: number) => updateDeficiency('protan', { intensity })}
+              minimumValue={0}
+              maximumValue={1}
+              step={0.01}
+            />
+          )}
+        </View>
+
+        <View style={styles.deficiencyControl}>
+          <View style={styles.controlHeader}>
+            <Switch
+              value={colorVision.deutan.enabled}
+              onValueChange={(enabled) => updateDeficiency('deutan', { enabled })}
+            />
+            <Text style={styles.controlLabel}>
+              Deuteranopia ({Math.round(colorVision.deutan.intensity * 100)}%)
+            </Text>
+          </View>
+          {colorVision.deutan.enabled && (
+            <Slider
+              style={styles.slider}
+              value={colorVision.deutan.intensity}
+              onValueChange={(intensity: number) => updateDeficiency('deutan', { intensity })}
+              minimumValue={0}
+              maximumValue={1}
+              step={0.01}
+            />
+          )}
+        </View>
       </View>
     </View>
   );
@@ -88,20 +175,25 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 10,
   },
   controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     padding: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
   },
-  button: {
-    backgroundColor: '#2196F3',
-    padding: 15,
-    borderRadius: 5,
-    minWidth: 100,
+  deficiencyControl: {
+    marginBottom: 15,
+  },
+  controlHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 5,
   },
-  buttonText: {
-    color: 'white',
+  controlLabel: {
+    marginLeft: 10,
     fontSize: 16,
-    fontWeight: 'bold',
+    flex: 1,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
   },
 }); 
