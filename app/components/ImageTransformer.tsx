@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, Text, ActivityIndicator } from 'react-native';
-import { manipulateAsync, SaveFormat, FlipType } from 'expo-image-manipulator';
-import { Image } from 'expo-image';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
+import SkiaImageFilter from './SkiaImageFilter';
+import { IDENTITY_MATRIX, GRAYSCALE_MATRIX, type ColorMatrix } from '../lib/colorMatrices';
 
 interface ImageTransformerProps {
   image: {
@@ -12,60 +12,46 @@ interface ImageTransformerProps {
 }
 
 export default function ImageTransformer({ image }: ImageTransformerProps) {
-  const [transformedImage, setTransformedImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [currentMatrix, setCurrentMatrix] = useState<ColorMatrix>(IDENTITY_MATRIX);
 
-  const handleFlip = async () => {
-    try {
-      setIsProcessing(true);
-      const result = await manipulateAsync(
-        image.uri,
-        [{ flip: isFlipped ? FlipType.Vertical : FlipType.Horizontal }],
-        { format: SaveFormat.PNG }
-      );
-      setTransformedImage(result.uri);
-      setIsFlipped(!isFlipped);
-    } catch (error) {
-      console.error('Failed to transform image:', error);
-    } finally {
-      setIsProcessing(false);
-    }
+  const toggleFilter = () => {
+    setCurrentMatrix((current: ColorMatrix) => 
+      current.name === 'Original' ? GRAYSCALE_MATRIX : IDENTITY_MATRIX
+    );
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.imageRow}>
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: image.uri }}
-            style={styles.image}
-            contentFit="contain"
+          <SkiaImageFilter
+            imageUri={image.uri}
+            matrix={IDENTITY_MATRIX}
+            width={150}
+            height={150}
           />
           <Text style={styles.label}>Original</Text>
         </View>
         
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: transformedImage || image.uri }}
-            style={styles.image}
-            contentFit="contain"
+          <SkiaImageFilter
+            imageUri={image.uri}
+            matrix={currentMatrix}
+            width={150}
+            height={150}
           />
-          <Text style={styles.label}>Transformed</Text>
-          {isProcessing && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="#2196F3" />
-            </View>
-          )}
+          <Text style={styles.label}>{currentMatrix.name}</Text>
         </View>
       </View>
 
       <View style={styles.controls}>
         <Pressable
           style={styles.button}
-          onPress={handleFlip}
+          onPress={toggleFilter}
         >
-          <Text style={styles.buttonText}>Flip Image</Text>
+          <Text style={styles.buttonText}>
+            {currentMatrix.name === 'Original' ? 'Apply Grayscale' : 'Reset'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -86,13 +72,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
     aspectRatio: 1,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
     position: 'relative',
-  },
-  image: {
-    flex: 1,
   },
   label: {
     position: 'absolute',
@@ -104,12 +84,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 5,
     fontSize: 12,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
   },
   controls: {
     flexDirection: 'row',
