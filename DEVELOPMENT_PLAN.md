@@ -93,7 +93,3 @@ When adding native modules that aren't supported in Expo Go:
 - Use development builds for native modules not supported in Expo Go
 - Clear Metro bundler cache if changes aren't reflecting
 - Check iOS/Android specific setup requirements for native modules
-
-Commands:
-npx expo prebuild
-npx expo run:ios
